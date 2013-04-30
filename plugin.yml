@@ -1,10 +1,15 @@
 name: GGTeleport
 main: com.au_craft.GGTeleport.GGTeleport
-version: 0.1
+version: 0.2
 
 commands:
   tpr:
-    descrption: Base Teleportation command.
+    description: Base Teleportation command.
     usage: /tpr
     permission: GGTeleport.random
+    permission-message: You do not have permission for that.
+  tpreload:
+    description: Reloads the data from config.yml
+    usage: /tpreload
+    permission: GGTeleport.reload
     permission-message: You do not have permission for that.
