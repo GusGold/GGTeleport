@@ -1,6 +1,6 @@
 V 0.2
   + Added config settings
-    ~ Radius for X and Z
+    * Radius for X and Z
   + Reload Command
     * /tpreload
 
