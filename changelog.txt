@@ -1,2 +1,9 @@
+V 0.2
+  + Added config settings
+    ~ Radius for X and Z
+  + Reload Command
+    * /tpreload
+
+
 V 0.1: Initial Working Release
-- /tpr teleports to a safe coord within 500 blocks
+  + /tpr teleports to a safe coord within 500 blocks
