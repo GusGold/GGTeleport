@@ -17,13 +17,13 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	
 	@Override
 	public void onEnable(){
-		File file = new File(getDataFolder() + File.separator + "config.yml);");
+		File file = new File(getDataFolder() + File.separator + "config.yml");
 		if (!file.exists()) {
-			this.getLogger().info("Generating config.yml...");
-			this.getConfig().addDefault("xRadius", 500);
-			this.getConfig().addDefault("zRadius", 500);
-			this.getConfig().options().copyDefaults(true);
-			this.saveConfig();
+			createConfig();
+		}
+		if (testIfNumber(getConfig().getString("xRadius")) == false || testIfNumber(getConfig().getString("zRadius")) == false){
+			getLogger().warning("[GG Teleport] Config File Error: Regenerating Config.");
+			createConfig();
 		}
 			
 		getLogger().info("Enabled");
@@ -36,62 +36,97 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
 		if (!(sender instanceof Player)){ //Check for Player as Sender
-			sender.sendMessage("You need to be a player in game to access this command!");
+			sender.sendMessage("[GG Teleport] You need to be a player in game to access this command!");
 			return true;
 		}
-		if (cmd.getName().equalsIgnoreCase("tpr")){ //Check for command "tp"
-			sender.sendMessage("Random Teleportation Initialised!");
-			Player player = (Player) sender;
-			tpr(player);
+		if (cmd.getName().equalsIgnoreCase("tpr")){
+			if (args.length == 0) {
+				int xRadius = getConfig().getInt("xRadius");
+				int zRadius = getConfig().getInt("zRadius");
+				sender.sendMessage("[GG Teleportat] Started with a " + xRadius + " x " + zRadius + " radius!");
+				Player player = (Player) sender;
+				tpr(player, xRadius, zRadius);
+			} else if (args.length == 1){
+				if (testIfNumber(args[0]) == false){
+					sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
+				} else {
+					sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
+					Player player = (Player) sender;
+					tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+				}
+			} else if (args.length == 2){
+				if (testIfNumber(args[0]) == false || testIfNumber(args[1]) == false){
+					sender.sendMessage("[GG Teleport] '" + args[0] + "' or '" + args[1] + "' is not a valid number.");
+				} else {
+					sender.sendMessage("[GG Teleport] Started with a " + args[0] + " x " + args[1] + " radius!");
+					Player player = (Player) sender;
+					tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+				}
+			} else {
+				 sender.sendMessage("[GG Teleport] Too many Arguments");
+			}
 		} else if (cmd.getName().equalsIgnoreCase("tpreload")){
 			this.reloadConfig();
-			this.getLogger().info("Config Reloaded from file");
-			sender.sendMessage("Config Reloaded!");
+			this.getLogger().info("[GG Teleport] Config Reloaded from file");
+			sender.sendMessage("[GG Teleport] Config Reloaded!");
 		}
 		return true;
 	}
-
-	public void checkTestLocation(Location currentLocation, double[] testLocation, Player player){
-		
+	private boolean testIfNumber(String s){
+		try {
+			@SuppressWarnings("unused")
+			int n = Integer.parseInt(s);
+		} catch (NumberFormatException nfe){
+			return false;
+		}
+		return true;
+	}
+	
+	private void createConfig(){
+		getConfig().addDefault("xRadius", 500);
+		getConfig().addDefault("zRadius", 500);
+		getConfig().options().copyDefaults(true);
+		saveConfig();
+		getLogger().info("config.yml generated");
+	}
+	
+	private void tpr(Player player, int xRadius, int zRadius) {
+		Location currentLocation = player.getLocation();
 		World w = currentLocation.getWorld();
 		Random random = new Random();
 		
-		int xRadius = getConfig().getInt("xRadius");
-		int zRadius = getConfig().getInt("zRadius");
-		double x = random.nextInt(xRadius * 2) - xRadius;
-		double z = random.nextInt(zRadius * 2) - zRadius;
-		
-		testLocation[1] = x + currentLocation.getX();
-		testLocation[3] = z + currentLocation.getZ();
-		testLocation[2] = w.getHighestBlockYAt((int) testLocation[1], (int) testLocation[3]) - 1;
-		
-		getLogger().info("testLocation[1]: " + Double.toString(testLocation[1]));
-		getLogger().info("testLocation[2]: " + Double.toString(testLocation[2]));
-		getLogger().info("testLocation[3]: " + Double.toString(testLocation[3]));
-		
-		int testBlock = w.getBlockTypeIdAt((int) testLocation[1], (int) testLocation[2], (int) testLocation[3]);
-		
-		getLogger().info("testBlock: " + Integer.toString(testBlock));
-		
-		int isSafe = 0;
-		for (int i=0; i < blockList.length; i++){
-			if (testBlock != blockList[i]){
-				isSafe++;
-			}
-		}
-		if (isSafe == blockList.length){
-			testLocation[0] = 1;
-		} else {
-			testLocation[0] = 0;
-		}
-	}
-
-	private void tpr(Player player) {
-		Location currentLocation = player.getLocation();
 		int tooManyTimes = 0;
 		
 		while (testLocation[0] != 1 && tooManyTimes < 100){
-			checkTestLocation(currentLocation, testLocation, player);
+									
+			double x = random.nextInt(xRadius * 2) - xRadius;
+			double z = random.nextInt(zRadius * 2) - zRadius;
+			
+			testLocation[1] = x + currentLocation.getX();
+			testLocation[3] = z + currentLocation.getZ();
+			testLocation[2] = w.getHighestBlockYAt((int) testLocation[1], (int) testLocation[3]) - 1;
+			
+			getLogger().info("testLocation[1]: " + Double.toString(testLocation[1]));
+			getLogger().info("testLocation[2]: " + Double.toString(testLocation[2]));
+			getLogger().info("testLocation[3]: " + Double.toString(testLocation[3]));
+			
+			int testBlock = w.getBlockTypeIdAt((int) testLocation[1], (int) testLocation[2], (int) testLocation[3]);
+			
+			getLogger().info("testBlock: " + Integer.toString(testBlock));
+			
+			int isSafe = 0;
+			for (int i=0; i < blockList.length; i++){
+				if (testBlock != blockList[i]){
+					isSafe++;
+				}
+			}
+			if (isSafe == blockList.length){
+				testLocation[0] = 1;
+			} else {
+				testLocation[0] = 0;
+			}
+			
+
 			tooManyTimes++;
 		}
 		
@@ -115,9 +150,9 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			}
 			
 			player.teleport(finalLocation);
-			player.sendMessage("Random Teleportation Complete!");
+			player.sendMessage("[GG Teleport] Complete!");
 		} else {
-			player.sendMessage("Teleportation Failed!");
+			player.sendMessage("[GG Teleport] Failed!");
 		}
 		testLocation[0] = 0;
 	}
