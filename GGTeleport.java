@@ -43,7 +43,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			if (args.length == 0) {
 				int xRadius = getConfig().getInt("xRadius");
 				int zRadius = getConfig().getInt("zRadius");
-				sender.sendMessage("[GG Teleportat] Started with a " + xRadius + " x " + zRadius + " radius!");
+				sender.sendMessage("[GG Teleport] Started with a " + xRadius + " x " + zRadius + " radius!");
 				Player player = (Player) sender;
 				tpr(player, xRadius, zRadius);
 			} else if (args.length == 1){
@@ -74,8 +74,10 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	}
 	private boolean testIfNumber(String s){
 		try {
-			@SuppressWarnings("unused")
 			int n = Integer.parseInt(s);
+			if (n < 1){
+				return false;
+			}
 		} catch (NumberFormatException nfe){
 			return false;
 		}
@@ -125,7 +127,6 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			} else {
 				testLocation[0] = 0;
 			}
-			
 
 			tooManyTimes++;
 		}
