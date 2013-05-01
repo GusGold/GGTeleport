@@ -1,3 +1,14 @@
+V 0.3
+  + Added custom ranges
+    * /tpr [radius]
+    * /tpr [xRadius] [zRadius]
+  + Added Error checking
+    * inputs must be integers
+  + [BUG] Incorrect config won't be overwritten
+    * On /tpreload, /tpr uses old values
+    * On /reload, /tpr causes fatal error trying to use non-int location values 
+
+
 V 0.2
   + Added config settings
     * Radius for X and Z
