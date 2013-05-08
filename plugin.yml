@@ -1,9 +1,32 @@
 name: GGTeleport
 main: com.au_craft.GGTeleport.GGTeleport
-version: 0.4
+version: 0.5
 author: GusGold
 
 commands:
   tpr:
     description: Base Teleportation command.
     usage: /tpr [reload:xRadius] [zRadius]
+
+permissions:
+  GGT.*:
+      description: Gives full access to GGTeleportation
+      default: op
+      children:
+          GGT.reload: true
+          GGT.use.*: true
+  GGT.reload:
+      description: Gives access to reload from config.yml
+      default: op
+  GGT.use.*:
+      description: Gives full access random teleportation
+      default: false
+      children:
+          GGT.use.default: true
+          GGT.use.custom: true
+  GGT.use.default:
+      description: Gives access to random teleportion of default setting
+      default: true
+  GGT.use.custom:
+      description: Gives access to radius settings
+      default: false
