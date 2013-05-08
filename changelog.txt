@@ -1,3 +1,6 @@
+V 0.5
+  + Added permissions
+
 V 0.4
   + Config Compatibility Checker
   + Errors now use default config value
