@@ -18,7 +18,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	private int xRadius;
 	private int zRadius;
 	private int maxTries;
-	private String[] jarVersion = {"0.4","0.3"};
+	private String[] jarVersion = {"0.4","0.5"};
 	
 	@Override
 	public void onEnable(){
@@ -37,38 +37,54 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		if (!(sender instanceof Player)){ //Check for Player as Sender
 			sender.sendMessage("[GG Teleport] You need to be a player in game to access this command!");
 			return true;
-		}
+		} 
+			
+		Player player = (Player) sender;
+				
 		if (cmd.getName().equalsIgnoreCase("tpr")){
 			if (args.length == 0) {
-				sender.sendMessage("[GG Teleport] Started with a " + xRadius + " x " + zRadius + " radius!");
-				Player player = (Player) sender;
-				tpr(player, xRadius, zRadius);
+				if (player.hasPermission("GGT.use.default")){
+					sender.sendMessage("[GG Teleport] Started with a " + xRadius + " x " + zRadius + " radius!");
+					tpr(player, xRadius, zRadius);
+				} else {
+					sender.sendMessage("[GG Teleport] You do not have high enough permission");
+				}
 			} else if (args.length == 1){
 				switch (args[0]) {
 					case "reload": 
-						reloadConfiguration();
-						sender.sendMessage("[GG Teleport] Config Reloaded!");
+						if (player.hasPermission("GGT.reload")){
+							reloadConfiguration();
+							sender.sendMessage("[GG Teleport] Config Reloaded!");
+						} else {
+							sender.sendMessage("[GG Teleport] You do not have high enough permission");
+						}
 						break;
 					default:
-						if (testIfNumber(args[0]) == false){
-							sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
+						if (player.hasPermission("GGT.use.custom")){
+							if (testIfNumber(args[0]) == false){
+								sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
+							} else {
+								sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
+								tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+							}
 						} else {
-							sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
-							Player player = (Player) sender;
-							tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+							sender.sendMessage("[GG Teleport] You do not have high enough permission");
 						}
 						break;
 				}
 			} else if (args.length == 2){
-				if (testIfNumber(args[0]) == false || testIfNumber(args[1]) == false){
-					sender.sendMessage("[GG Teleport] '" + args[0] + "' or '" + args[1] + "' is not a valid number.");
+				if (player.hasPermission("GGT.custom")){
+					if (testIfNumber(args[0]) == false || testIfNumber(args[1]) == false){
+						sender.sendMessage("[GG Teleport] '" + args[0] + "' or '" + args[1] + "' is not a valid number.");
+					} else {
+						sender.sendMessage("[GG Teleport] Started with a " + args[0] + " x " + args[1] + " radius!");
+						tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+					}
 				} else {
-					sender.sendMessage("[GG Teleport] Started with a " + args[0] + " x " + args[1] + " radius!");
-					Player player = (Player) sender;
-					tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+				sender.sendMessage("[GG Teleport] You do not have high enough permission");				
 				}
 			} else {
-				 sender.sendMessage("[GG Teleport] Too many Arguments");
+				sender.sendMessage("[GG Teleport] Too many Arguments");
 			}
 		}
 		return true;
