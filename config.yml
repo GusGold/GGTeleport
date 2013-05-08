@@ -1,0 +1,30 @@
+###############
+# GG Teleport #
+# By  GusGold #
+###############
+#   Config    #
+###############
+
+# NOTE:
+#    - Delete this file to regenerate it with default values
+#    - If values are not viable, default will be used
+#    - Delete config when updating GGTeleport.jar
+
+Version: 0.4
+
+# Default radius used on /tpr command
+xRadius: 250
+zRadius: 250
+
+# List of block's Data Values that you don't want to be teleported on to
+# Official List can be found at http://www.minecraftwiki.net/wiki/Data_values
+blockBlackList:
+- 8
+- 9
+- 10
+- 11
+
+# Maximum tries per run to find a viable spawn location
+# (Higher value = potentially more delay)
+# Set to -1 for unlimited tries (Likely to enter near-infinite loop)
+maximumTries: 100
