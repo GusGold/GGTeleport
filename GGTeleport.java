@@ -1,6 +1,7 @@
 package com.au_craft.GGTeleport;
 
-import java.io.File;
+
+import java.util.List;
 import java.util.Random;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -12,19 +13,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class GGTeleport extends JavaPlugin implements Listener {
 	
-	public static int[] blockList = {8,9,10,11};
-	public static double[] testLocation={0,0,0,0};
+	private int[] blockBlackListArray;
+	private double[] testLocation={0,0,0,0};
+	private int xRadius;
+	private int zRadius;
+	private int maxTries;
+	private String[] jarVersion = {"0.4","0.3"};
 	
 	@Override
 	public void onEnable(){
-		File file = new File(getDataFolder() + File.separator + "config.yml");
-		if (!file.exists()) {
-			createConfig();
-		}
-		if (testIfNumber(getConfig().getString("xRadius")) == false || testIfNumber(getConfig().getString("zRadius")) == false){
-			getLogger().warning("[GG Teleport] Config File Error: Regenerating Config.");
-			createConfig();
-		}
+		
+		loadConfiguration();
 			
 		getLogger().info("Enabled");
 		getServer().getPluginManager().registerEvents(this, this);
@@ -41,18 +40,24 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		}
 		if (cmd.getName().equalsIgnoreCase("tpr")){
 			if (args.length == 0) {
-				int xRadius = getConfig().getInt("xRadius");
-				int zRadius = getConfig().getInt("zRadius");
 				sender.sendMessage("[GG Teleport] Started with a " + xRadius + " x " + zRadius + " radius!");
 				Player player = (Player) sender;
 				tpr(player, xRadius, zRadius);
 			} else if (args.length == 1){
-				if (testIfNumber(args[0]) == false){
-					sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
-				} else {
-					sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
-					Player player = (Player) sender;
-					tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+				switch (args[0]) {
+					case "reload": 
+						reloadConfiguration();
+						sender.sendMessage("[GG Teleport] Config Reloaded!");
+						break;
+					default:
+						if (testIfNumber(args[0]) == false){
+							sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
+						} else {
+							sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
+							Player player = (Player) sender;
+							tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+						}
+						break;
 				}
 			} else if (args.length == 2){
 				if (testIfNumber(args[0]) == false || testIfNumber(args[1]) == false){
@@ -65,13 +70,10 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			} else {
 				 sender.sendMessage("[GG Teleport] Too many Arguments");
 			}
-		} else if (cmd.getName().equalsIgnoreCase("tpreload")){
-			this.reloadConfig();
-			this.getLogger().info("[GG Teleport] Config Reloaded from file");
-			sender.sendMessage("[GG Teleport] Config Reloaded!");
 		}
 		return true;
 	}
+	
 	private boolean testIfNumber(String s){
 		try {
 			int n = Integer.parseInt(s);
@@ -84,12 +86,60 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		return true;
 	}
 	
-	private void createConfig(){
-		getConfig().addDefault("xRadius", 500);
-		getConfig().addDefault("zRadius", 500);
+	public void loadConfiguration(){
 		getConfig().options().copyDefaults(true);
-		saveConfig();
-		getLogger().info("config.yml generated");
+		saveDefaultConfig();
+		getBlocksBlackList();
+		getMaxTryCount();
+		getRadius();
+		checkConfigCompatibility();
+	}
+
+	public void reloadConfiguration(){
+		this.reloadConfig();
+		getBlocksBlackList();
+		getRadius();
+		getMaxTryCount();
+		checkConfigCompatibility();
+		this.getLogger().info("Config Reloaded");
+	}
+	
+	public void getBlocksBlackList(){
+		List<Integer> blockBlackList = getConfig().getIntegerList("blockBlackList");
+		blockBlackListArray = new int[blockBlackList.size()];
+		for (int i = 0; i<blockBlackList.size(); i++){
+			int x = blockBlackList.get(i);
+			blockBlackListArray[i] = x;
+		}
+	}
+	
+	public void getMaxTryCount(){
+		maxTries = getConfig().getInt("maximumTries");
+		if (maxTries == -1){
+			maxTries = 2147483647;
+		} else if (maxTries < -1){
+			maxTries = 0;
+		}
+	}
+	
+	public void getRadius(){
+		xRadius = getConfig().getInt("xRadius");
+		zRadius = getConfig().getInt("zRadius");
+	}
+	
+	public void checkConfigCompatibility(){
+		String configVersion = getConfig().getString("Version");
+		boolean configIsCompatible = false;
+		for (String compatibleVersion: jarVersion){
+			if (configVersion.equals(compatibleVersion)){
+				configIsCompatible = true;
+			}
+		}
+		if (!configIsCompatible){
+			getLogger().warning("Config is incompatible. Please delete config and Reload!");
+			getLogger().warning("Using Default values!");
+		}
+		
 	}
 	
 	private void tpr(Player player, int xRadius, int zRadius) {
@@ -99,7 +149,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		
 		int tooManyTimes = 0;
 		
-		while (testLocation[0] != 1 && tooManyTimes < 100){
+		while (testLocation[0] != 1 && tooManyTimes < maxTries){
 									
 			double x = random.nextInt(xRadius * 2) - xRadius;
 			double z = random.nextInt(zRadius * 2) - zRadius;
@@ -108,30 +158,22 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			testLocation[3] = z + currentLocation.getZ();
 			testLocation[2] = w.getHighestBlockYAt((int) testLocation[1], (int) testLocation[3]) - 1;
 			
-			getLogger().info("testLocation[1]: " + Double.toString(testLocation[1]));
-			getLogger().info("testLocation[2]: " + Double.toString(testLocation[2]));
-			getLogger().info("testLocation[3]: " + Double.toString(testLocation[3]));
-			
 			int testBlock = w.getBlockTypeIdAt((int) testLocation[1], (int) testLocation[2], (int) testLocation[3]);
 			
-			getLogger().info("testBlock: " + Integer.toString(testBlock));
-			
 			int isSafe = 0;
-			for (int i=0; i < blockList.length; i++){
-				if (testBlock != blockList[i]){
+			for (int i=0; i < blockBlackListArray.length; i++){
+				if (testBlock != blockBlackListArray[i]){
 					isSafe++;
 				}
 			}
-			if (isSafe == blockList.length){
+			if (isSafe == blockBlackListArray.length){
 				testLocation[0] = 1;
 			} else {
 				testLocation[0] = 0;
 			}
 
-			tooManyTimes++;
+		tooManyTimes++;
 		}
-		
-		getLogger().info("tooManyTimes: " + Integer.toString(tooManyTimes));
 		
 		if (testLocation[0] == 1){
 			Location finalLocation = currentLocation;
