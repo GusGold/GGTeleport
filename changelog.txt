@@ -1,3 +1,10 @@
+V 0.6.1
+  + Added Update Checking
+
+V 0.6
+  + Added tping others through "p:PlayerName" tag at end of commands
+    * e.g. To tp player x in a 10 square area, type /tpr 10 p:x
+    
 V 0.5
   + Added permissions
 
