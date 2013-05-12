@@ -1,3 +1,6 @@
+V 0.6.2
+  + Fixed Severe Logger issue
+
 V 0.6.1
   + Added Update Checking
 
