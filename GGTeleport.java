@@ -3,7 +3,6 @@ package com.au_craft.GGTeleport;
 
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Logger;
 
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -20,8 +19,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	private int xRadius;
 	private int zRadius;
 	private int maxTries;
-	private String[] jarVersion = {"0.6.1"};
-	protected Logger log;
+	private String[] jarVersion = {"0.6.1","0.6.2"};
 	protected UpdateChecker updateChecker;
 		
 	@Override
@@ -31,14 +29,14 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		
 		this.updateChecker = new UpdateChecker(this, "http://dev.bukkit.org/server-mods/ggteleport/files.rss");
 		if (this.updateChecker.updateNeeded() && getConfig().getBoolean("checkForUpdates")){
-			log.info("A new version is available: "+this.updateChecker.getVersion());
-			log.info("Get it from: " + this.updateChecker.getLink());
+			getLogger().info("A new version is available: "+this.updateChecker.getVersion());
+			getLogger().info("Get it from: " + this.updateChecker.getLink());
 		}
 		if (!getConfig().getBoolean("checkForUpdates")){
-			log.warning("Update Checking is Disabled. It is advised to be enabled. Change settings in config.yml");
+			getLogger().warning("Update Checking is Disabled. It is advised to be enabled. Change settings in config.yml");
 		}
 		
-		log.info("Enabled");
+		getLogger().info("Enabled");
 		getServer().getPluginManager().registerEvents(this, this);
 	}
 		
@@ -152,7 +150,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		getRadius();
 		getMaxTryCount();
 		checkConfigCompatibility();
-		this.log.info("Config Reloaded");
+		this.getLogger().info("Config Reloaded");
 	}
 	
 	public void getBlocksBlackList(){
@@ -187,8 +185,8 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			}
 		}
 		if (!configIsCompatible){
-			log.warning("Config is incompatible. Please delete config and Reload!");
-			log.warning("Using Default values!");
+			getLogger().warning("Config is incompatible. Please delete config and Reload!");
+			getLogger().warning("Using Default values!");
 		}
 		
 	}
