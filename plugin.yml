@@ -1,6 +1,6 @@
 name: GGTeleport
 main: com.au_craft.GGTeleport.GGTeleport
-version: 0.6.1
+version: 0.6.2
 author: GusGold
 
 commands:
@@ -25,6 +25,9 @@ permissions:
       children:
           GGT.use.default: true
           GGT.use.custom: true
+  GGT.use.center:
+      description: Gives access to choose who to center teleport on.
+      default: false
   GGT.use.others:
       description: Gives access to teleport other players
       default: false
