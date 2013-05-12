@@ -1,3 +1,6 @@
+V 0.6.3
+  * Apparently Bukkit wants to limit as much server traffic as possible, even rss feeds...
+
 V 0.6.2
   + Fixed Severe Logger issue
 
