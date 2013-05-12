@@ -1,6 +1,6 @@
 name: GGTeleport
 main: com.au_craft.GGTeleport.GGTeleport
-version: 0.6.2
+version: 0.6.3
 author: GusGold
 
 commands:
