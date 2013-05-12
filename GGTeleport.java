@@ -3,6 +3,8 @@ package com.au_craft.GGTeleport;
 
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Logger;
+
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -18,14 +20,25 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	private int xRadius;
 	private int zRadius;
 	private int maxTries;
-	private String[] jarVersion = {"0.4","0.5"};
-	
+	private String[] jarVersion = {"0.6.1"};
+	protected Logger log;
+	protected UpdateChecker updateChecker;
+		
 	@Override
 	public void onEnable(){
 		
 		loadConfiguration();
-			
-		getLogger().info("Enabled");
+		
+		this.updateChecker = new UpdateChecker(this, "http://dev.bukkit.org/server-mods/ggteleport/files.rss");
+		if (this.updateChecker.updateNeeded() && getConfig().getBoolean("checkForUpdates")){
+			log.info("A new version is available: "+this.updateChecker.getVersion());
+			log.info("Get it from: " + this.updateChecker.getLink());
+		}
+		if (!getConfig().getBoolean("checkForUpdates")){
+			log.warning("Update Checking is Disabled. It is advised to be enabled. Change settings in config.yml");
+		}
+		
+		log.info("Enabled");
 		getServer().getPluginManager().registerEvents(this, this);
 	}
 		
@@ -37,22 +50,45 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		if (!(sender instanceof Player)){ //Check for Player as Sender
 			sender.sendMessage("[GG Teleport] You need to be a player in game to access this command!");
 			return true;
-		} 
-			
-		Player player = (Player) sender;
-				
+		}
+		
+		int targetIdPos = -1;	
+		Player target = (Player) sender;
+		
+		for (int i = 0; i<args.length; i++){
+			String string = args[i];
+			sender.sendMessage("Testing args[" + i + "]: " + args[i]);
+			if (string.toLowerCase().startsWith("p:")){
+				if (sender.hasPermission("GGT.use.others")){
+					try {
+						sender.sendMessage(target.toString());
+						target = getServer().getPlayer(string.substring(2));
+						sender.sendMessage(target.toString());
+					} catch (NullPointerException e){
+						sender.sendMessage(string.substring(2)+" is not online.");
+						return true;
+					}
+					targetIdPos = i;
+				}else {
+					sender.sendMessage("You do not have sufficient Permission");
+					return true;
+				}
+			}
+		}
+		
 		if (cmd.getName().equalsIgnoreCase("tpr")){
-			if (args.length == 0) {
-				if (player.hasPermission("GGT.use.default")){
+			if (args.length == 0 || (args.length == 1 && targetIdPos == 0)) {
+				if (sender.hasPermission("GGT.use.default")){
 					sender.sendMessage("[GG Teleport] Started with a " + xRadius + " x " + zRadius + " radius!");
-					tpr(player, xRadius, zRadius);
+					//if sender has p: perms
+					tpr(target, xRadius, zRadius);
 				} else {
 					sender.sendMessage("[GG Teleport] You do not have high enough permission");
 				}
-			} else if (args.length == 1){
+			} else if (args.length == 1 || (args.length == 2 && targetIdPos == 1)){
 				switch (args[0]) {
 					case "reload": 
-						if (player.hasPermission("GGT.reload")){
+						if (sender.hasPermission("GGT.reload")){
 							reloadConfiguration();
 							sender.sendMessage("[GG Teleport] Config Reloaded!");
 						} else {
@@ -60,25 +96,25 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 						}
 						break;
 					default:
-						if (player.hasPermission("GGT.use.custom")){
+						if (sender.hasPermission("GGT.use.custom")){
 							if (testIfNumber(args[0]) == false){
 								sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
 							} else {
 								sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
-								tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+								tpr(target, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
 							}
 						} else {
 							sender.sendMessage("[GG Teleport] You do not have high enough permission");
 						}
 						break;
 				}
-			} else if (args.length == 2){
-				if (player.hasPermission("GGT.custom")){
+			} else if (args.length == 2 || (args.length == 3 && targetIdPos == 2)){
+				if (sender.hasPermission("GGT.custom")){
 					if (testIfNumber(args[0]) == false || testIfNumber(args[1]) == false){
 						sender.sendMessage("[GG Teleport] '" + args[0] + "' or '" + args[1] + "' is not a valid number.");
 					} else {
 						sender.sendMessage("[GG Teleport] Started with a " + args[0] + " x " + args[1] + " radius!");
-						tpr(player, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+						tpr(target, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
 					}
 				} else {
 				sender.sendMessage("[GG Teleport] You do not have high enough permission");				
@@ -89,7 +125,6 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		}
 		return true;
 	}
-	
 	private boolean testIfNumber(String s){
 		try {
 			int n = Integer.parseInt(s);
@@ -117,7 +152,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		getRadius();
 		getMaxTryCount();
 		checkConfigCompatibility();
-		this.getLogger().info("Config Reloaded");
+		this.log.info("Config Reloaded");
 	}
 	
 	public void getBlocksBlackList(){
@@ -152,8 +187,8 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			}
 		}
 		if (!configIsCompatible){
-			getLogger().warning("Config is incompatible. Please delete config and Reload!");
-			getLogger().warning("Using Default values!");
+			log.warning("Config is incompatible. Please delete config and Reload!");
+			log.warning("Using Default values!");
 		}
 		
 	}
