@@ -19,7 +19,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	private int xRadius;
 	private int zRadius;
 	private int maxTries;
-	private String[] jarVersion = {"0.6.1","0.6.2"};
+	private String[] jarVersion = {"0.6.1","0.6.2","0.6.3"};
 	protected UpdateChecker updateChecker;
 		
 	@Override
@@ -28,7 +28,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		loadConfiguration();
 		
 		this.updateChecker = new UpdateChecker(this, "http://dev.bukkit.org/server-mods/ggteleport/files.rss");
-		if (this.updateChecker.updateNeeded() && getConfig().getBoolean("checkForUpdates")){
+		if (getConfig().getBoolean("checkForUpdates") && this.updateChecker.updateNeeded()){
 			getLogger().info("A new version is available: "+this.updateChecker.getVersion());
 			getLogger().info("Get it from: " + this.updateChecker.getLink());
 		}
