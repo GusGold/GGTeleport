@@ -10,7 +10,7 @@
 #    - If values are not viable, default will be used
 #    - Delete config when updating GGTeleport.jar
 
-Version: 0.6.1
+Version: 0.6.2
 checkForUpdates: true
 
 # Default radius used on /tpr command
