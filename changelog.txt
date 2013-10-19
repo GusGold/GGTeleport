@@ -1,3 +1,26 @@
+v0.9.2
+  - Fixed bug in update code
+
+v0.9.1
+  * Changed Update system due to altered Bukkit Rules
+
+V 0.9
+  + Added Command block support!
+    * /tpr (player) [xRadius,zRadius]
+    * player argument can be @a, @r, @p or player name
+    * All vanilla arguments can be used! see http://minecraft.gamepedia.com/Command_Block#Arguments for details
+
+V 0.8
+  + Added portal teleporting
+    * Entering portals in specific location will perform /tpr command
+
+V 0.7
+  + Added ability to choose player as center of search
+  + Added c:center tag
+  + Recoded input method
+    * Tags can now be anywhere in the command
+    * Less chance of error due to input
+
 V 0.6.3
   * Apparently Bukkit wants to limit as much server traffic as possible, even rss feeds...
 
