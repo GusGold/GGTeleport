@@ -1,16 +1,26 @@
 package com.au_craft.GGTeleport;
 
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import net.gravitydevelopment.updater.Updater;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.command.BlockCommandSender;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 public final class GGTeleport extends JavaPlugin implements Listener {
 	
@@ -19,21 +29,33 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	private int xRadius;
 	private int zRadius;
 	private int maxTries;
-	private String[] jarVersion = {"0.6.1","0.6.2","0.6.3"};
-	protected UpdateChecker updateChecker;
-		
+	private String[] jarVersion = {"0.8", "0.9", "0.9.1", "0.9.2"};
+	private String errorReason = "";
+	private double[] portalPos1={0,0,0};
+	private double[] portalPos2={0,0,0};
+	private String portalWorld;
+	private double[] playerPos={0,0,0};
+	private boolean checked = false;
+	BukkitTask timing;
+	
+	public static boolean update = false;
+	public static String name = "";
+	public static String version = "";
+	
 	@Override
 	public void onEnable(){
 		
 		loadConfiguration();
-		
-		this.updateChecker = new UpdateChecker(this, "http://dev.bukkit.org/server-mods/ggteleport/files.rss");
-		if (getConfig().getBoolean("checkForUpdates") && this.updateChecker.updateNeeded()){
-			getLogger().info("A new version is available: "+this.updateChecker.getVersion());
-			getLogger().info("Get it from: " + this.updateChecker.getLink());
-		}
-		if (!getConfig().getBoolean("checkForUpdates")){
-			getLogger().warning("Update Checking is Disabled. It is advised to be enabled. Change settings in config.yml");
+		if (getConfig().getBoolean("checkForUpdates")){
+			Updater updater = new Updater(this, 57057, this.getFile(), Updater.UpdateType.DEFAULT, false);
+			update = updater.getResult() == Updater.UpdateResult.UPDATE_AVAILABLE;
+			if (update){
+				name = updater.getLatestName();
+				version = updater.getLatestGameVersion();
+				getLogger().info("Restart Bukkit to update to " + name + " for " + version);
+			}
+		} else {
+			getLogger().warning("Update Checking is Disabled. It is advised to enable it in plugins/GGTeleport/config.yml");
 		}
 		
 		getLogger().info("Enabled");
@@ -43,30 +65,70 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	@Override
 	public void onDisable(){
 	}
-	
+
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args){
-		if (!(sender instanceof Player)){ //Check for Player as Sender
+		if (sender instanceof BlockCommandSender){
+			BlockCommandSender blockSender = (BlockCommandSender)sender;
+			if (cmd.getName().equalsIgnoreCase("tpr")){
+				if (args.length < 1){
+					getLogger().info("Not enough arguments from CommandBlock at (" + blockSender.getBlock().getX() + "," + blockSender.getBlock().getY() + "," + blockSender.getBlock().getZ() + ")");
+				} else {
+					if (args.length == 1) {
+						tpr(Bukkit.getPlayer(args[0]), blockSender.getBlock().getLocation(), sender, xRadius, zRadius);
+					} else {
+						String coords[] = args[1].split(",");
+						tpr(Bukkit.getPlayer(args[0]), blockSender.getBlock().getLocation(), sender, Integer.parseInt(coords[0]), Integer.parseInt(coords[1]));
+					}
+					
+				}
+			}
+			
+			return true;
+		} else if (!(sender instanceof Player)){ //Check for Player as Sender
 			sender.sendMessage("[GG Teleport] You need to be a player in game to access this command!");
 			return true;
 		}
 		
-		int targetIdPos = -1;	
+		ArrayList<String> argsList = new ArrayList<String>();
+		for (String arg:args){
+			argsList.add(arg);
+		}
+					
 		Player target = (Player) sender;
 		
-		for (int i = 0; i<args.length; i++){
-			String string = args[i];
-			sender.sendMessage("Testing args[" + i + "]: " + args[i]);
+		for (int i = 0; i<argsList.size(); i++){
+			String string = argsList.get(i);
 			if (string.toLowerCase().startsWith("p:")){
 				if (sender.hasPermission("GGT.use.others")){
 					try {
-						sender.sendMessage(target.toString());
 						target = getServer().getPlayer(string.substring(2));
-						sender.sendMessage(target.toString());
 					} catch (NullPointerException e){
 						sender.sendMessage(string.substring(2)+" is not online.");
 						return true;
 					}
-					targetIdPos = i;
+					argsList.remove(i);
+				}else {
+					sender.sendMessage("You do not have sufficient Permission");
+					return true;
+				}
+			}
+		}
+		Player center = (Player) sender;
+		for (int i = 0; i<argsList.size(); i++){
+			String string = argsList.get(i);
+			if (string.toLowerCase().startsWith("c:")){
+				if (sender.hasPermission("GGT.use.center")){
+					try {
+						if (string.equals("c:")){
+							center = target;
+						}else{
+							center = getServer().getPlayer(string.substring(2));
+						}
+					} catch (NullPointerException e){
+						sender.sendMessage(string.substring(2)+" is not online.");
+						return true;
+					}
+					argsList.remove(i);
 				}else {
 					sender.sendMessage("You do not have sufficient Permission");
 					return true;
@@ -75,16 +137,15 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		}
 		
 		if (cmd.getName().equalsIgnoreCase("tpr")){
-			if (args.length == 0 || (args.length == 1 && targetIdPos == 0)) {
+			if (argsList.size() == 0){
 				if (sender.hasPermission("GGT.use.default")){
-					sender.sendMessage("[GG Teleport] Started with a " + xRadius + " x " + zRadius + " radius!");
-					//if sender has p: perms
-					tpr(target, xRadius, zRadius);
+					sender.sendMessage("[GG Teleport] Teleporting "+ target.getName() +" in a " + xRadius + " x " + zRadius + " radius around " + center.getName());
+					tpr(target, center.getLocation(), (Player) sender, xRadius, zRadius);
 				} else {
 					sender.sendMessage("[GG Teleport] You do not have high enough permission");
 				}
-			} else if (args.length == 1 || (args.length == 2 && targetIdPos == 1)){
-				switch (args[0]) {
+			} else if (argsList.size() == 1){
+				switch (argsList.get(0)) {
 					case "reload": 
 						if (sender.hasPermission("GGT.reload")){
 							reloadConfiguration();
@@ -95,24 +156,24 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 						break;
 					default:
 						if (sender.hasPermission("GGT.use.custom")){
-							if (testIfNumber(args[0]) == false){
-								sender.sendMessage("[GG Teleport] '" + args[0] + "' is not a valid number.");
+							if (testIfNumber(argsList.get(0)) == false){
+								sender.sendMessage("[GG Teleport] '" + argsList.get(0) + "' is not a valid number.");
 							} else {
-								sender.sendMessage("[GG Teleport] Started with a " + args[0] + " radius!");
-								tpr(target, Integer.parseInt(args[0]), Integer.parseInt(args[0]));
+								sender.sendMessage("[GG Teleport] Teleporting " + target.getName() + " in a " + argsList.get(0) + " radius around " + center.getName());
+								tpr(target, center.getLocation(), (Player) sender, Integer.parseInt(argsList.get(0)), Integer.parseInt(argsList.get(0)));
 							}
 						} else {
 							sender.sendMessage("[GG Teleport] You do not have high enough permission");
 						}
 						break;
 				}
-			} else if (args.length == 2 || (args.length == 3 && targetIdPos == 2)){
+			} else if (argsList.size() == 2){
 				if (sender.hasPermission("GGT.custom")){
-					if (testIfNumber(args[0]) == false || testIfNumber(args[1]) == false){
-						sender.sendMessage("[GG Teleport] '" + args[0] + "' or '" + args[1] + "' is not a valid number.");
+					if (testIfNumber(argsList.get(0)) == false || testIfNumber(argsList.get(1)) == false){
+						sender.sendMessage("[GG Teleport] '" + argsList.get(0) + "' or '" + argsList.get(1) + "' is not a valid number.");
 					} else {
-						sender.sendMessage("[GG Teleport] Started with a " + args[0] + " x " + args[1] + " radius!");
-						tpr(target, Integer.parseInt(args[0]), Integer.parseInt(args[1]));
+						sender.sendMessage("[GG Teleport] Teleporting " + target.getName() + " in a " + argsList.get(0) + " x " + argsList.get(1) + " radius around " + center.getName());
+						tpr(target, center.getLocation(), (Player) sender, Integer.parseInt(argsList.get(0)), Integer.parseInt(argsList.get(1)));
 					}
 				} else {
 				sender.sendMessage("[GG Teleport] You do not have high enough permission");				
@@ -123,6 +184,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		}
 		return true;
 	}
+
 	private boolean testIfNumber(String s){
 		try {
 			int n = Integer.parseInt(s);
@@ -141,6 +203,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		getBlocksBlackList();
 		getMaxTryCount();
 		getRadius();
+		getPortal();
 		checkConfigCompatibility();
 	}
 
@@ -149,6 +212,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		getBlocksBlackList();
 		getRadius();
 		getMaxTryCount();
+		getPortal();
 		checkConfigCompatibility();
 		this.getLogger().info("Config Reloaded");
 	}
@@ -176,6 +240,16 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		zRadius = getConfig().getInt("zRadius");
 	}
 	
+	public void getPortal(){
+		portalWorld = getConfig().getString("portal.world");
+		portalPos1[0] = getConfig().getDouble("portal.pos1.X");
+		portalPos1[1] = getConfig().getDouble("portal.pos1.Y");
+		portalPos1[2] = getConfig().getDouble("portal.pos1.Z");
+		portalPos2[0] = getConfig().getDouble("portal.pos2.X");
+		portalPos2[1] = getConfig().getDouble("portal.pos2.Y");
+		portalPos2[2] = getConfig().getDouble("portal.pos2.Z");
+	}
+
 	public void checkConfigCompatibility(){
 		String configVersion = getConfig().getString("Version");
 		boolean configIsCompatible = false;
@@ -191,8 +265,14 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		
 	}
 	
-	private void tpr(Player player, int xRadius, int zRadius) {
-		Location currentLocation = player.getLocation();
+	private void loadChunk(World w, double x, double z){
+		Chunk chunk = w.getChunkAt((int) x, (int) z);
+		chunk.load(true);
+		getLogger().info("Loading Chunk");		
+	}
+	
+	private void tpr(Player target, Location center, CommandSender sender, int xRadius, int zRadius) {
+		Location currentLocation = center;
 		World w = currentLocation.getWorld();
 		Random random = new Random();
 		
@@ -223,6 +303,10 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 
 		tooManyTimes++;
 		}
+		if (tooManyTimes >= maxTries){
+			errorReason = "Couldn't find a safe teleportation location";
+			
+		}
 		
 		if (testLocation[0] == 1){
 			Location finalLocation = currentLocation;
@@ -240,12 +324,49 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 			} else {
 				finalLocation.setZ(testLocation[3]);
 			}
-			
-			player.teleport(finalLocation);
-			player.sendMessage("[GG Teleport] Complete!");
+			loadChunk(w, finalLocation.getX(), finalLocation.getZ());
+			target.teleport(finalLocation);
+			checkSafe(target, finalLocation);
 		} else {
-			player.sendMessage("[GG Teleport] Failed!");
+			sender.sendMessage("[GG Teleport] Failed: " + errorReason);
 		}
 		testLocation[0] = 0;
+	}
+	
+	public void checkSafe(final Player targetCheck, final Location finalLocationCheck){
+		if (checked){
+			checked = false;
+			if (targetCheck.getLocation().getY() < finalLocationCheck.getY() - 1){
+				getLogger().info("Saving Player!");
+				Location currentLocation = targetCheck.getLocation();
+				currentLocation.setY(finalLocationCheck.getY());
+				targetCheck.teleport(currentLocation);
+			}
+		} else {
+			checked = true;
+			timing = new BukkitRunnable(){
+				public void run(){
+					checkSafe(targetCheck, finalLocationCheck);
+					getLogger().info("Check done");
+				}
+			}.runTaskLater(this, 5);
+		}
+	}
+	@EventHandler
+	private void atPortal(PlayerPortalEvent event){
+		Player player = event.getPlayer();
+		playerPos[0] = player.getLocation().getX();
+		playerPos[1] = player.getLocation().getY();
+		playerPos[2] = player.getLocation().getZ();
+		if (player.getLocation().getWorld().getName().toString().toLowerCase().equals(portalWorld)){
+			if ((portalPos1[0] <= playerPos[0] && playerPos[0] <= portalPos2[0]) || (portalPos2[0] <= playerPos[0] && playerPos[0] <= portalPos1[0])){
+				if ((portalPos1[1] <= playerPos[1] && playerPos[1] <= portalPos2[1]) || (portalPos2[1] <= playerPos[1] && playerPos[1] <= portalPos1[1])){
+					if ((portalPos1[2] <= playerPos[2] && playerPos[2] <= portalPos2[2]) || (portalPos2[2] <= playerPos[2] && playerPos[2] <= portalPos1[2])){
+						event.setCancelled(true);
+						tpr(player, player.getLocation(), player, xRadius, zRadius);
+					}
+				}
+			}
+		}
 	}
 }
