@@ -8,9 +8,8 @@
 # NOTE:
 #    - Delete this file to regenerate it with default values
 #    - If values are not viable, default will be used
-#    - Delete config when updating GGTeleport.jar
 
-Version: 0.6.3
+Version: 0.9.2
 checkForUpdates: true
 
 # Default radius used on /tpr command
@@ -24,6 +23,20 @@ blockBlackList:
 - 9
 - 10
 - 11
+
+# To have a portal that activates /tpr, make a real portal in your world
+# then put the coordinates of a box that contains the portal down below
+# Make sure your world is spelled correctly. Leave world black to disable
+portal:
+  world: world
+  pos1:
+    X: -10
+    Y: 63
+    Z: -10
+  pos2:
+    X: 10
+    Y: 66
+    Z: 10
 
 # Maximum tries per run to find a viable spawn location
 # (Higher value = potentially more delay)
