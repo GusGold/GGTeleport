@@ -29,7 +29,7 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 	private int xRadius;
 	private int zRadius;
 	private int maxTries;
-	private String[] jarVersion = {"0.8", "0.9", "0.9.1", "0.9.2"};
+	private String[] jarVersion = {"0.8", "0.9", "0.9.1", "0.9.2", "0.9.3"};
 	private String errorReason = "";
 	private double[] portalPos1={0,0,0};
 	private double[] portalPos2={0,0,0};
@@ -99,38 +99,44 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		for (int i = 0; i<argsList.size(); i++){
 			String string = argsList.get(i);
 			if (string.toLowerCase().startsWith("p:")){
+				argsList.remove(i);
 				if (sender.hasPermission("GGT.use.others")){
-					try {
+					if (getServer().getPlayer(string.substring(2)) != null){
 						target = getServer().getPlayer(string.substring(2));
-					} catch (NullPointerException e){
-						sender.sendMessage(string.substring(2)+" is not online.");
+					} else {
+						sender.sendMessage("[GG Teleport] " + string.substring(2) + " is not online.");
 						return true;
 					}
-					argsList.remove(i);
 				}else {
-					sender.sendMessage("You do not have sufficient Permission");
+					sender.sendMessage("[GG Teleport] You do not have sufficient Permission");
 					return true;
 				}
 			}
 		}
-		Player center = (Player) sender;
+		Location center = target.getLocation();
 		for (int i = 0; i<argsList.size(); i++){
 			String string = argsList.get(i);
 			if (string.toLowerCase().startsWith("c:")){
 				if (sender.hasPermission("GGT.use.center")){
 					try {
 						if (string.equals("c:")){
-							center = target;
+							center = target.getLocation();
 						}else{
-							center = getServer().getPlayer(string.substring(2));
+							String centers[] = string.substring(2).split(",");
+							if (centers.length == 1){
+								center = getServer().getPlayer(string.substring(2)).getLocation();
+							} else {
+								center.setX(Integer.parseInt(centers[0]));
+								center.setZ(Integer.parseInt(centers[1]));
+							}
 						}
 					} catch (NullPointerException e){
-						sender.sendMessage(string.substring(2)+" is not online.");
+						sender.sendMessage("[GG Teleport] " + string.substring(2) + " is not online.");
 						return true;
 					}
 					argsList.remove(i);
 				}else {
-					sender.sendMessage("You do not have sufficient Permission");
+					sender.sendMessage("[GG Teleport] You do not have sufficient Permission");
 					return true;
 				}
 			}
@@ -139,8 +145,8 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 		if (cmd.getName().equalsIgnoreCase("tpr")){
 			if (argsList.size() == 0){
 				if (sender.hasPermission("GGT.use.default")){
-					sender.sendMessage("[GG Teleport] Teleporting "+ target.getName() +" in a " + xRadius + " x " + zRadius + " radius around " + center.getName());
-					tpr(target, center.getLocation(), (Player) sender, xRadius, zRadius);
+					sender.sendMessage("[GG Teleport] Teleporting "+ target.getName() +" in a " + xRadius + " x " + zRadius + " radius around " + center.getX() + ", " + center.getZ());
+					tpr(target, center, (Player) sender, xRadius, zRadius);
 				} else {
 					sender.sendMessage("[GG Teleport] You do not have high enough permission");
 				}
@@ -159,8 +165,8 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 							if (testIfNumber(argsList.get(0)) == false){
 								sender.sendMessage("[GG Teleport] '" + argsList.get(0) + "' is not a valid number.");
 							} else {
-								sender.sendMessage("[GG Teleport] Teleporting " + target.getName() + " in a " + argsList.get(0) + " radius around " + center.getName());
-								tpr(target, center.getLocation(), (Player) sender, Integer.parseInt(argsList.get(0)), Integer.parseInt(argsList.get(0)));
+								sender.sendMessage("[GG Teleport] Teleporting " + target.getName() + " in a " + argsList.get(0) + " radius around " + center.getX() + ", " + center.getY());
+								tpr(target, center, (Player) sender, Integer.parseInt(argsList.get(0)), Integer.parseInt(argsList.get(0)));
 							}
 						} else {
 							sender.sendMessage("[GG Teleport] You do not have high enough permission");
@@ -172,8 +178,8 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 					if (testIfNumber(argsList.get(0)) == false || testIfNumber(argsList.get(1)) == false){
 						sender.sendMessage("[GG Teleport] '" + argsList.get(0) + "' or '" + argsList.get(1) + "' is not a valid number.");
 					} else {
-						sender.sendMessage("[GG Teleport] Teleporting " + target.getName() + " in a " + argsList.get(0) + " x " + argsList.get(1) + " radius around " + center.getName());
-						tpr(target, center.getLocation(), (Player) sender, Integer.parseInt(argsList.get(0)), Integer.parseInt(argsList.get(1)));
+						sender.sendMessage("[GG Teleport] Teleporting " + target.getName() + " in a " + argsList.get(0) + " x " + argsList.get(1) + " radius around " + center.getX() + ", " + center.getY());
+						tpr(target, center, (Player) sender, Integer.parseInt(argsList.get(0)), Integer.parseInt(argsList.get(1)));
 					}
 				} else {
 				sender.sendMessage("[GG Teleport] You do not have high enough permission");				
@@ -363,7 +369,11 @@ public final class GGTeleport extends JavaPlugin implements Listener {
 				if ((portalPos1[1] <= playerPos[1] && playerPos[1] <= portalPos2[1]) || (portalPos2[1] <= playerPos[1] && playerPos[1] <= portalPos1[1])){
 					if ((portalPos1[2] <= playerPos[2] && playerPos[2] <= portalPos2[2]) || (portalPos2[2] <= playerPos[2] && playerPos[2] <= portalPos1[2])){
 						event.setCancelled(true);
-						tpr(player, player.getLocation(), player, xRadius, zRadius);
+						if(player.hasPermission("GGT.use.portal")){
+							tpr(player, player.getLocation(), player, xRadius, zRadius);
+						} else {
+								player.sendMessage("[GG Teleport] You do not have high enough permission");
+							}
 					}
 				}
 			}
