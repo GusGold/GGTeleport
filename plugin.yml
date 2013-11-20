@@ -1,6 +1,6 @@
 name: GGTeleport
 main: com.au_craft.GGTeleport.GGTeleport
-version: 0.9.2
+version: 0.9.3
 author: GusGold
 
 commands:
@@ -26,6 +26,7 @@ permissions:
           GGT.use.custom: true
           GGT.use.others: true
           GGT.use.center: true
+          GGT.use.portal: true
   GGT.use.center:
       description: Gives access to choose who to center teleport on.
       default: false
@@ -37,4 +38,7 @@ permissions:
       default: true
   GGT.use.custom:
       description: Gives access to radius settings
+      default: false
+  GGT.use.portal:
+      descirption: Allows use of portals for teleporting
       default: false
